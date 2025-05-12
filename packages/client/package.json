@@ -1,6 +1,6 @@
 {
   "name": "@agent-bridge/client",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Client library for consuming services using the AgentBridge Protocol.",
   "author": "Blazity",
   "license": "MIT",
@@ -23,7 +23,6 @@
     "ai": "^4.1.66",
     "zod": "^3.24.2"
   },
-  "@agent-bridge/core": "^0.1.0",
   "devDependencies": {
     "@agent-bridge/core": "^0.1.0",
     "@types/node": "^20.10.4",
