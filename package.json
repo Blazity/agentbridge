@@ -1,0 +1,11 @@
+{
+  "name": "agentbridge",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "dependencies": {
+    "@changesets/cli": "^2.29.3"
+  }
+}

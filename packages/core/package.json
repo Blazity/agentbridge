@@ -1,0 +1,26 @@
+{
+  "name": "@agent-bridge/core",
+  "version": "0.1.0",
+  "description": "Core library for AgentBridge Protocol format.",
+  "author": "Blazity",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.1",
+    "typescript": "^5.0.3"
+  }
+}

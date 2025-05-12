@@ -1,0 +1,452 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentBridge Protocol Schema",
+  "description": "JSON Schema for validating AgentBridge Protocol files",
+  "type": "object",
+  "required": ["metadata", "info", "actions", "flows"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Schema URI reference"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["version"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "AgentBridge specification version",
+          "pattern": "^[0-9]+(\\.[0-9]+)*$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "info": {
+      "type": "object",
+      "required": ["title", "description", "version", "baseUrl"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Name of the API"
+        },
+        "description": {
+          "type": "string",
+          "description": "Comprehensive description of the API"
+        },
+        "version": {
+          "type": "string",
+          "description": "API version identifier",
+          "pattern": "^[0-9]+(\\.[0-9]+)*$"
+        },
+        "baseUrl": {
+          "type": "string",
+          "description": "Base URL for API endpoints",
+          "format": "uri"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authentication": {
+      "type": "object",
+      "required": ["type", "parameters", "implementation"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Authentication type",
+          "enum": ["credential"]
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Credentials required for authentication",
+          "minProperties": 1,
+          "patternProperties": {
+            "^[a-zA-Z0-9_-]+$": {
+              "type": "object",
+              "required": ["description"],
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "description": "Description of the credential parameter"
+                },
+                "schema": {
+                  "type": "object",
+                  "description": "JSON Schema of the credential parameter"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "implementation": {
+          "type": "object",
+          "description": "How authentication is implemented",
+          "minProperties": 1,
+          "properties": {
+            "headers": {
+              "type": "object",
+              "description": "Headers used for authentication",
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "string",
+                  "description": "Header value template"
+                }
+              },
+              "additionalProperties": false
+            },
+            "queryParameters": {
+              "type": "object",
+              "description": "Query parameters used for authentication",
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "string",
+                  "description": "Query parameter value template"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "object",
+      "description": "API operations",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "object",
+          "required": [
+            "id",
+            "description",
+            "endpoint",
+            "method",
+            "requestFormat",
+            "responseFormat"
+          ],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the action"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of what the action does"
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "API endpoint path",
+              "pattern": "^/"
+            },
+            "method": {
+              "type": "string",
+              "description": "HTTP method",
+              "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "PATCH",
+                "HEAD",
+                "OPTIONS"
+              ]
+            },
+            "requestFormat": {
+              "type": "object",
+              "required": ["contentType"],
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "description": "Content type of the request"
+                },
+                "parameters": {
+                  "type": "object",
+                  "description": "Parameters for the request",
+                  "patternProperties": {
+                    "^[a-zA-Z0-9_-]+$": {
+                      "type": "object",
+                      "required": ["description", "in"],
+                      "properties": {
+                        "description": {
+                          "type": "string",
+                          "description": "Description of the parameter"
+                        },
+                        "in": {
+                          "type": "string",
+                          "enum": ["path", "query"],
+                          "description": "Where the parameter is located (path or query)"
+                        },
+                        "required": {
+                          "type": "boolean",
+                          "description": "Whether the parameter is required"
+                        },
+                        "example": {
+                          "description": "Example value for the parameter"
+                        },
+                        "schema": {
+                          "type": "object",
+                          "description": "JSON Schema of the parameter"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "body": {
+                  "type": "object",
+                  "description": "JSON Schema of the request body"
+                }
+              },
+              "additionalProperties": false
+            },
+            "responseFormat": {
+              "type": "object",
+              "required": ["contentType"],
+              "properties": {
+                "contentType": {
+                  "type": "string",
+                  "description": "Content type of the response"
+                },
+                "schema": {
+                  "description": "Schema of the response"
+                },
+                "example": {
+                  "description": "Example response"
+                }
+              },
+              "additionalProperties": false
+            },
+            "errors": {
+              "type": "array",
+              "description": "Possible error responses",
+              "items": {
+                "type": "object",
+                "required": ["code", "reason"],
+                "properties": {
+                  "code": {
+                    "type": "integer",
+                    "description": "HTTP status code"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for the error"
+                  },
+                  "resolution": {
+                    "type": "string",
+                    "description": "How to resolve the error"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "flows": {
+      "type": "object",
+      "description": "Multi-step operations",
+      "minProperties": 1,
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "object",
+          "required": ["id", "description", "steps", "parameters", "response"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the flow"
+            },
+            "description": {
+              "type": "string",
+              "description": "Description of the flow's purpose"
+            },
+            "parameters": {
+              "type": "array",
+              "description": "Parameters for the flow",
+              "items": {
+                "type": "object",
+                "required": ["name", "description"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the parameter"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the parameter"
+                  },
+                  "required": {
+                    "type": "boolean",
+                    "description": "Whether the parameter is required",
+                    "default": false
+                  },
+                  "type": {
+                    "type": "string",
+                    "description": "Data type of the parameter",
+                    "enum": [
+                      "string",
+                      "number",
+                      "integer",
+                      "boolean",
+                      "array",
+                      "object"
+                    ]
+                  },
+                  "schema": {
+                    "type": "object",
+                    "description": "JSON Schema of the parameter"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "response": {
+              "type": "object",
+              "description": "Response schema for the flow",
+              "required": ["schema"],
+              "properties": {
+                "schema": {
+                  "type": "object",
+                  "description": "Schema defining the structure of the flow response",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["object"]
+                    },
+                    "properties": {
+                      "type": "object",
+                      "patternProperties": {
+                        "^[a-zA-Z0-9_-]+$": {
+                          "type": "object",
+                          "required": ["type", "description"],
+                          "properties": {
+                            "type": {
+                              "type": "string",
+                              "enum": [
+                                "string",
+                                "number",
+                                "integer",
+                                "boolean",
+                                "array",
+                                "object"
+                              ]
+                            },
+                            "description": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "steps": {
+              "type": "array",
+              "description": "Sequence of actions to execute",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["actionId", "description"],
+                "properties": {
+                  "actionId": {
+                    "type": "string",
+                    "description": "Reference to an action ID"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of this step"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "dataFlow": {
+              "type": "array",
+              "description": "Data mapping between steps and flow inputs/outputs",
+              "items": {
+                "type": "object",
+                "required": ["from", "to", "description"],
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "description": "Source data path"
+                  },
+                  "to": {
+                    "type": "string",
+                    "description": "Target data path"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Description of the data mapping"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "entities": {
+      "type": "object",
+      "description": "Data structure definitions",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "type": "object",
+          "required": ["id", "properties"],
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the entity"
+            },
+            "properties": {
+              "type": "object",
+              "description": "Entity properties",
+              "minProperties": 1,
+              "patternProperties": {
+                "^[a-zA-Z0-9_-]+$": {
+                  "type": "object",
+                  "required": ["type", "description"],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "description": "Data type of the property",
+                      "enum": [
+                        "string",
+                        "number",
+                        "integer",
+                        "boolean",
+                        "array",
+                        "object"
+                      ]
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Description of the property"
+                    },
+                    "items": {
+                      "description": "Schema for array items"
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
