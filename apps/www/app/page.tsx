@@ -66,7 +66,7 @@ export default function Home() {
           </a>
 
           <a
-            href="https://docs.blazity.com/agentbridge"
+            href="https://docs.blazity.com/agent-bridge"
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 border border-gray-200 rounded-lg p-6 flex items-center gap-4 transition-all hover:border-blazity-orange hover:border-2"
