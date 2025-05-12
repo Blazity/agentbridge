@@ -1,6 +1,6 @@
 {
   "name": "@agent-bridge/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "main": "dist/index.js",
   "description": "A command-line interface for converting OpenAPI/Swagger specifications to AgentBridge Protocol format.",
   "author": "Blazity",
@@ -9,7 +9,8 @@
     "agentbridge": "dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "agentbridge.schema.json"
   ],
   "publishConfig": {
     "access": "public"
@@ -42,6 +43,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "build": "tsup && cp ../../agentbridge.schema.json dist/"
+    "build": "tsup && cp ../../agentbridge.schema.json ."
   }
 }
