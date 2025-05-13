@@ -1,12 +1,11 @@
-import { BookOpen, Github } from "lucide-react";
+import { BookOpen, ChevronRight, Github } from "lucide-react";
 
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col px-6 py-16 max-w-4xl mx-auto">
-      {/* TODO: unhide when blogpost is published */}
-      {/* <div className="mb-16 flex justify-center">
+      <div className="mb-16 flex justify-center">
         <a
-          href="https://blog.api-agent-framework.org/launch"
+          href="https://blazity.com/blog/agentbridge-open-source-api-integration-framework"
           target="_blank"
           rel="noopener noreferrer"
           className="py-2 px-4 bg-white rounded-full flex items-center gap-1 text-gray-700 hover:text-black transition-all shadow-[0_0_20px_rgba(245,101,39,0.3)] hover:shadow-[0_0_30px_rgba(245,101,39,0.5)] border border-gray-100"
@@ -14,7 +13,7 @@ export default function Home() {
           <span>See our launch post</span>
           <ChevronRight size={16} />
         </a>
-      </div> */}
+      </div>
 
       <header className="mb-16">
         <h1 className="text-4xl font-semibold mb-16">AgentBridge</h1>
