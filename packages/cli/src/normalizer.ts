@@ -182,8 +182,9 @@ export class OpenAPISpecNormalizer {
     operation: OpenAPIV3.OperationObject,
     pathParameters: OpenAPIV3.ParameterObject[] = [],
   ): NormalizedEndpoint | null {
-    const operationId =
-      operation.operationId || sanitizeName(`${method}_${path}`);
+    const operationId = sanitizeName(
+      operation.operationId || `${method}_${path}`,
+    );
 
     const combinedParams: OpenAPIV3.ParameterObject[] = [
       ...pathParameters,
