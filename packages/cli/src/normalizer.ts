@@ -10,7 +10,9 @@ import {
 import { Entity } from "./enhanced-interim";
 import { sanitizeName } from "./utils";
 import { logger } from "./logger";
-import { OpenAPI, OpenAPIV3 } from "openapi-types";
+import { OpenAPI, OpenAPIV3, OpenAPIV3_1 } from "openapi-types";
+
+type V3Document = OpenAPIV3.Document | OpenAPIV3_1.Document;
 
 export class OpenAPISpecNormalizer {
   async parseAndNormalize(openApiSpec: unknown): Promise<NormalizedInterim> {
@@ -18,11 +20,15 @@ export class OpenAPISpecNormalizer {
       const parsedSpec = await SwaggerParser.validate(
         openApiSpec as OpenAPI.Document,
       );
+
       if (!("openapi" in parsedSpec)) {
-        throw new Error(
-          "Swagger 2.0 implementation is in progress, use an OpenAPI 3.x spec for now",
+        logger.info(
+          "Detected Swagger 2.0 specification, converting to OpenAPI 3.0...",
         );
+        const convertedSpec = await this.convertSwagger2ToOpenAPI3(parsedSpec);
+        return this.normalize(convertedSpec);
       }
+
       return this.normalize(parsedSpec);
     } catch (error) {
       logger.error("Error parsing OpenAPI spec");
@@ -32,7 +38,35 @@ export class OpenAPISpecNormalizer {
     }
   }
 
-  private normalize(spec: OpenAPI.Document): NormalizedInterim {
+  private async convertSwagger2ToOpenAPI3(swagger2Spec: OpenAPI.Document) {
+    try {
+      logger.startSpinner("Converting Swagger 2.0 to OpenAPI 3.0...");
+      const response = await fetch("https://converter.swagger.io/api/convert", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(swagger2Spec),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Conversion failed: ${response.status} ${errorText}`);
+      }
+
+      const convertedSpec = await response.json();
+      logger.stopSpinner("Successfully converted to OpenAPI 3.0");
+      return convertedSpec as V3Document;
+    } catch (error) {
+      logger.error("Error converting Swagger 2.0 to OpenAPI 3.0");
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      throw new Error(`Conversion failed: ${errorMessage}`);
+    }
+  }
+
+  private normalize(spec: V3Document): NormalizedInterim {
     const baseUrl = this.getBaseUrl(spec);
     const authentication = this.getAuthentication(spec);
     const endpoints = this.getEndpoints(spec);
@@ -53,29 +87,18 @@ export class OpenAPISpecNormalizer {
     };
   }
 
-  private getBaseUrl(spec: OpenAPI.Document): string {
-    // OpenAPI 3.x
-    if ("servers" in spec && spec.servers && spec.servers.length > 0) {
+  private getBaseUrl(spec: V3Document): string {
+    if (spec.servers && spec.servers.length > 0) {
       return spec.servers[0].url;
-    }
-
-    // Swagger 2.0
-    if ("basePath" in spec) {
-      if (!spec.host) throw new Error("No host found in OpenAPI spec");
-      if (!spec.basePath) throw new Error("No base path found in OpenAPI spec");
-
-      const scheme = spec.schemes?.[0] ?? "https";
-      return `${scheme}://${spec.host}${spec.basePath}`;
     }
 
     throw new Error("No base URL found in OpenAPI spec");
   }
 
   private getAuthentication(
-    spec: OpenAPI.Document,
+    spec: V3Document,
   ): NormalizedInterim["authentication"] {
-    // OpenAPI 3.x
-    if ("components" in spec && spec.components?.securitySchemes) {
+    if (spec.components?.securitySchemes) {
       for (const scheme of Object.values(spec.components.securitySchemes)) {
         if ("type" in scheme && scheme.type === "apiKey") {
           const implementationType =
@@ -119,65 +142,35 @@ export class OpenAPISpecNormalizer {
       }
     }
 
-    // Swagger 2.0
-    if ("securityDefinitions" in spec && spec.securityDefinitions) {
-      for (const scheme of Object.values(spec.securityDefinitions)) {
-        if (scheme.type === "apiKey") {
-          const implementationType =
-            scheme.in === "header" ? "headers" : "queryParameters";
-
-          return {
-            type: "credential",
-            parameters: {
-              api_key: {
-                description: scheme.description ?? "API Key for authentication",
-              },
-            },
-            implementation: {
-              [implementationType]: {
-                [scheme.name]: "${api_key}",
-              },
-            },
-          };
-        }
-      }
-    }
-
     return undefined;
   }
 
-  private getEndpoints(spec: OpenAPI.Document): NormalizedEndpoint[] {
-    // OpenAPI 3.x
-    if ("openapi" in spec) {
-      if (spec.paths) {
-        return Object.entries(spec.paths)
-          .map(([path, pathItem]) => {
-            if (!pathItem) return;
-            for (const [method, operation] of Object.entries(pathItem)) {
-              if (
-                !Object.values(OpenAPIV3.HttpMethods).includes(
-                  method as OpenAPIV3.HttpMethods,
-                )
-              ) {
-                continue;
-              }
-
-              const pathLevelParams =
-                (pathItem as OpenAPIV3.PathItemObject).parameters ?? [];
-
-              return this.normalizeEndpoint(
-                path,
-                method.toUpperCase(),
-                operation as OpenAPIV3.OperationObject,
-                pathLevelParams as OpenAPIV3.ParameterObject[],
-              );
+  private getEndpoints(spec: V3Document): NormalizedEndpoint[] {
+    if (spec.paths) {
+      return Object.entries(spec.paths)
+        .map(([path, pathItem]) => {
+          if (!pathItem) return;
+          for (const [method, operation] of Object.entries(pathItem)) {
+            if (
+              !Object.values(OpenAPIV3.HttpMethods).includes(
+                method as OpenAPIV3.HttpMethods,
+              )
+            ) {
+              continue;
             }
-          })
-          .filter(endpoint => endpoint !== undefined && endpoint !== null);
-      }
-    } else {
-      // Swagger 2.0
-      // TODO: finish implementation for Swagger 2.0
+
+            const pathLevelParams =
+              (pathItem as OpenAPIV3.PathItemObject).parameters ?? [];
+
+            return this.normalizeEndpoint(
+              path,
+              method.toUpperCase(),
+              operation as OpenAPIV3.OperationObject,
+              pathLevelParams as OpenAPIV3.ParameterObject[],
+            );
+          }
+        })
+        .filter(endpoint => endpoint !== undefined && endpoint !== null);
     }
 
     throw new Error("No endpoints found in OpenAPI spec");
@@ -318,18 +311,8 @@ export class OpenAPISpecNormalizer {
     return normalizedResponses;
   }
 
-  private extractSchemas(spec: OpenAPI.Document): Record<string, unknown> {
-    // Handle OpenAPI 3.x schemas
-    if ("components" in spec) {
-      return spec.components?.schemas ?? {};
-    }
-
-    // Handle Swagger 2.0 definitions
-    if ("definitions" in spec) {
-      return spec.definitions ?? {};
-    }
-
-    return {};
+  private extractSchemas(spec: V3Document): Record<string, unknown> {
+    return spec.components?.schemas ?? {};
   }
 
   private extractEntities(
